@@ -1,5 +1,5 @@
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
-WORKDIR /app
+WORKDIR /kanzapi
 EXPOSE 80
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
@@ -8,12 +8,12 @@ COPY ["KanzApi.csproj", "./"]
 RUN dotnet restore "KanzApi.csproj"
 COPY . .
 WORKDIR "/src"
-RUN dotnet build "KanzApi.csproj" -c Release -o /app/build
+RUN dotnet build "KanzApi.csproj" -c Release -o /kanzapi/build
 
 FROM build AS publish
-RUN dotnet publish "KanzApi.csproj" -c Release -o /app/publish
+RUN dotnet publish "KanzApi.csproj" -c Release -o /kanzapi/publish
 
 FROM base AS final
-WORKDIR /app
-COPY --from=publish /app/publish .
+WORKDIR /kanzapi
+COPY --from=publish /kanzapi/publish .
 ENTRYPOINT ["dotnet", "KanzApi.dll"]
