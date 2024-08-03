@@ -16,4 +16,6 @@ RUN dotnet publish "KanzApi.csproj" -c Release -o /kanzapi/publish
 FROM base AS final
 WORKDIR /kanzapi
 COPY --from=publish /kanzapi/publish .
+COPY appsettings.json /kanzapi/appsettings.json
+COPY appsettings.Development.json /kanzapi/appsettings.Development.json
 ENTRYPOINT ["dotnet", "KanzApi.dll"]
