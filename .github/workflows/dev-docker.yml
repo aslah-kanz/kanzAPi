@@ -54,5 +54,5 @@ jobs:
           gunzip -c ~/image.tar.gz | docker load
           docker stop kanzapi || true
           docker rm kanzapi || true
-          docker run -d --name kanzapi -p 8080:80 -v /home/kanzdev/secrets.json:/kanzapi/secrets.json kanzapi:latest
+          docker run -d --name kanzapi -p 80:80 -v /home/kanzdev/secrets.json:/kanzapi/secrets.json kanzapi:latest
           EOF
