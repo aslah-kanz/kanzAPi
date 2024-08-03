@@ -54,5 +54,5 @@ jobs:
           gunzip -c ~/image.tar.gz | docker load
           docker stop app || true
           docker rm app || true
-          docker run -d --name app -p 80:80 kanzapi:latest
+          docker run -d --name app -p 8080:80 kanzapi:latest
           EOF
