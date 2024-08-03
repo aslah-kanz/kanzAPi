@@ -4,10 +4,10 @@ EXPOSE 80
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
-COPY ["KanzApi/KanzApi.csproj", "KanzApi/"]
-RUN dotnet restore "KanzApi/KanzApi.csproj"
+COPY ["KanzApi.csproj", "./"]
+RUN dotnet restore "KanzApi.csproj"
 COPY . .
-WORKDIR "/src/KanzApi"
+WORKDIR "/src"
 RUN dotnet build "KanzApi.csproj" -c Release -o /app/build
 
 FROM build AS publish
