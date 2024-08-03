@@ -28,7 +28,7 @@ jobs:
         run: docker build -t kanzapi:latest .
 
       - name: Save Docker image to file
-        run: docker save kanzapi:latest | gzip > image.tar.gz
+        run: docker save kanzapi:latest | gzip > kanzapi.tar.gz
 
       - name: Install sshpass
         run: sudo apt-get update && sudo apt-get install -y sshpass
@@ -42,7 +42,7 @@ jobs:
           VM_USERNAME: ${{ secrets.AZURE_VM_USERNAME }}
           VM_PASSWORD: ${{ secrets.AZURE_VM_PASSWORD }}
         run: |
-          sshpass -p "${VM_PASSWORD}" scp -o StrictHostKeyChecking=no -P 22 image.tar.gz ${VM_USERNAME}@${VM_HOST}:~/image.tar.gz
+          sshpass -p "${VM_PASSWORD}" scp -o StrictHostKeyChecking=no -P 22 kanzapi.tar.gz ${VM_USERNAME}@${VM_HOST}:~/kanzapi.tar.gz
 
       - name: Load Docker image on VM and deploy
         env:
@@ -51,7 +51,7 @@ jobs:
           VM_PASSWORD: ${{ secrets.AZURE_VM_PASSWORD }}
         run: |
           sshpass -p "${VM_PASSWORD}" ssh -o StrictHostKeyChecking=no -p 22 ${VM_USERNAME}@${VM_HOST} << 'EOF'
-          gunzip -c ~/image.tar.gz | docker load
+          gunzip -c ~/kanzapi.tar.gz | docker load
           docker stop kanzapi || true
           docker rm kanzapi || true
           docker run -d --name kanzapi -p 80:80 -v /home/kanzdev/secrets.json:/kanzapi/secrets.json -e ASPNETCORE_ENVIRONMENT=Development kanzapi:latest
