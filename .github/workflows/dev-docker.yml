@@ -44,15 +44,6 @@ jobs:
         run: |
           sshpass -p "${VM_PASSWORD}" scp -o StrictHostKeyChecking=no -P 22 image.tar.gz ${VM_USERNAME}@${VM_HOST}:~/image.tar.gz
 
-      - name: Create secrets file on VM
-        env:
-          VM_HOST: ${{ secrets.AZURE_VM_HOST }}
-          VM_USERNAME: ${{ secrets.AZURE_VM_USERNAME }}
-          VM_PASSWORD: ${{ secrets.AZURE_VM_PASSWORD }}
-          SECRETS_JSON: ${{ secrets.SECRETS_JSON }}
-        run: |
-          sshpass -p "${VM_PASSWORD}" ssh -o StrictHostKeyChecking=no -p 22 ${VM_USERNAME}@${VM_HOST} "echo \"$SECRETS_JSON\" > ~/secrets.json"
-
       - name: Load Docker image on VM and deploy
         env:
           VM_HOST: ${{ secrets.AZURE_VM_HOST }}
