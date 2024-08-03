@@ -1,4 +1,4 @@
-name: Build and Deploy to Docker Container
+name: Build and Deploy to Azure VM
 
 on:
   push:
@@ -22,22 +22,42 @@ jobs:
       - name: Save Docker image to a file
         run: docker save -o kanzapi.tar kanzapi:latest
 
+      - name: Verify Docker image file
+        run: ls -lh kanzapi.tar
+
+      - name: Add SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
       - name: Copy Docker image to Azure VM
         uses: appleboy/scp-action@v0.1.4
         with:
           host: ${{ secrets.AZURE_VM_HOST }}
           username: ${{ secrets.AZURE_VM_USERNAME }}
-          password: ${{ secrets.AZURE_VM_PASSWORD }}
+          key: ~/.ssh/id_rsa
           port: 22
           source: 'kanzapi.tar'
           target: '~/kanzapi.tar'
+          command_timeout: 10m
+          timeout: 30s
 
-      - name: SSH to Azure VM and load Docker image
+      - name: Verify transferred file on Azure VM
         uses: appleboy/ssh-action@v0.1.6
         with:
           host: ${{ secrets.AZURE_VM_HOST }}
           username: ${{ secrets.AZURE_VM_USERNAME }}
-          password: ${{ secrets.AZURE_VM_PASSWORD }}
+          key: ~/.ssh/id_rsa
+          port: 22
+          script: ls -lh ~/kanzapi.tar
+
+      - name: Load Docker image and run container on Azure VM
+        uses: appleboy/ssh-action@v0.1.6
+        with:
+          host: ${{ secrets.AZURE_VM_HOST }}
+          username: ${{ secrets.AZURE_VM_USERNAME }}
+          key: ~/.ssh/id_rsa
           port: 22
           script: |
             docker load -i ~/kanzapi.tar
