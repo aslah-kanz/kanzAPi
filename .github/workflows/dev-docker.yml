@@ -1,4 +1,4 @@
-name: Build and Deploy to Azure VM
+name: Deploy .NET 8 Application to VM Docker Container
 
 on:
   push:
@@ -6,59 +6,47 @@ on:
       - develop
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.x'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build .NET application
+        run: dotnet publish -c Release -o out
 
       - name: Build Docker image
         run: docker build -t kanzapi:latest .
 
-      - name: Save Docker image to a file
-        run: docker save -o kanzapi.tar kanzapi:latest
+      - name: Save Docker image to file
+        run: docker save kanzapi:latest | gzip > image.tar.gz
 
-      - name: Verify Docker image file
-        run: ls -lh kanzapi.tar
+      - name: Copy Docker image to VM
+        uses: appleboy/scp-action@v0.1.2
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USERNAME }}
+          key: ${{ secrets.VM_PRIVATE_KEY }}
+          source: image.tar.gz
+          target: ~/image.tar.gz
 
-      - name: Add SSH key
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-
-      - name: Copy Docker image to Azure VM
-        uses: appleboy/scp-action@v0.1.4
+      - name: Load Docker image on VM and deploy
+        uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.AZURE_VM_HOST }}
           username: ${{ secrets.AZURE_VM_USERNAME }}
-          key: ~/.ssh/id_rsa
-          port: 22
-          source: 'kanzapi.tar'
-          target: '~/kanzapi.tar'
-          command_timeout: 10m
-          timeout: 30s
-
-      - name: Verify transferred file on Azure VM
-        uses: appleboy/ssh-action@v0.1.6
-        with:
-          host: ${{ secrets.AZURE_VM_HOST }}
-          username: ${{ secrets.AZURE_VM_USERNAME }}
-          key: ~/.ssh/id_rsa
-          port: 22
-          script: ls -lh ~/kanzapi.tar
-
-      - name: Load Docker image and run container on Azure VM
-        uses: appleboy/ssh-action@v0.1.6
-        with:
-          host: ${{ secrets.AZURE_VM_HOST }}
-          username: ${{ secrets.AZURE_VM_USERNAME }}
-          key: ~/.ssh/id_rsa
-          port: 22
+          key: ${{ secrets.VM_PRIVATE_KEY }}
           script: |
-            docker load -i ~/kanzapi.tar
-            docker run -d -p 80:80 kanzapi:latest
+            gunzip -c ~/image.tar.gz | docker load
+            docker stop app || true
+            docker rm app || true
+            docker run -d --name app -p 80:80 kanzapi:latest
