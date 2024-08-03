@@ -1,0 +1,23 @@
+using KanzApi.Common.Models;
+
+namespace KanzApi.Transaction.Models;
+
+public class PaymentMethodResponse
+{
+
+    public int Id { get; set; }
+
+    public string Code { get; set; } = "";
+
+    public LocalizableString Name { get; set; } = new();
+
+    public LocalizableString? Instruction { get; set; }
+
+    public LocalizableString? Description { get; set; }
+
+    public ImageResponse? Image { get; set; }
+
+    public ImageResponse? ImageAr { get; set; }
+
+
+}

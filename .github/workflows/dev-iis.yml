@@ -1,0 +1,44 @@
+name: Deploy to IIS (Dev)
+
+on:
+  push:
+    branches:
+      - develop
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: self-hosted-dev
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    - name: Setup Dotnet
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+        cache: true
+    - name: Publish 
+      run: dotnet publish --configuration Release
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: release
+        path: .\bin\Release\net8.0\publish
+  deploy:
+    runs-on: self-hosted-dev
+    needs: build
+    steps:
+    - name: Stop site
+      run: |
+        Stop-Website -Name "${{ vars.SITE_NAME_DEV }}"
+        Stop-WebAppPool -Name "${{ vars.POOL_NAME_DEV }}"
+    - name: Download artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: release
+        path: ${{ vars.TARGET_BASE_DIR }}
+    - name: Start site
+      run: |
+        Start-Website -Name "${{ vars.SITE_NAME_DEV }}"
+        Start-WebAppPool -Name "${{ vars.POOL_NAME_DEV }}"
