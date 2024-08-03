@@ -30,25 +30,26 @@ jobs:
       - name: Save Docker image to file
         run: docker save kanzapi:latest | gzip > image.tar.gz
 
+      - name: Install SSH Client
+        run: sudo apt-get install -y openssh-client
+
       - name: Copy Docker image to VM
+        env:
+          VM_HOST: ${{ secrets.AZURE_VM_HOST }}
+          VM_USERNAME: ${{ secrets.AZURE_VM_USERNAME }}
+          VM_PASSWORD: ${{ secrets.AZURE_VM_PASSWORD }}
         run: |
-          docker run --rm \
-            -e PLUGIN_HOST=${{ secrets.AZURE_VM_HOST }} \
-            -e PLUGIN_PORT=22 \
-            -e PLUGIN_USERNAME=${{ secrets.AZURE_VM_USERNAME }} \
-            -e PLUGIN_PASSWORD=${{ secrets.AZURE_VM_PASSWORD }} \
-            -e PLUGIN_TARGET=~/image.tar.gz \
-            -e PLUGIN_SOURCE=image.tar.gz \
-            -v $(pwd):$(pwd) \
-            -w $(pwd) \
-            appleboy/drone-scp
+          sshpass -p "${VM_PASSWORD}" scp -o StrictHostKeyChecking=no -P 22 image.tar.gz ${VM_USERNAME}@${VM_HOST}:~/image.tar.gz
 
       - name: Load Docker image on VM and deploy
+        env:
+          VM_HOST: ${{ secrets.AZURE_VM_HOST }}
+          VM_USERNAME: ${{ secrets.AZURE_VM_USERNAME }}
+          VM_PASSWORD: ${{ secrets.AZURE_VM_PASSWORD }}
         run: |
-          docker run --rm \
-            -e PLUGIN_HOST=${{ secrets.AZURE_VM_HOST }} \
-            -e PLUGIN_PORT=22 \
-            -e PLUGIN_USERNAME=${{ secrets.AZURE_VM_USERNAME }} \
-            -e PLUGIN_PASSWORD=${{ secrets.AZURE_VM_PASSWORD }} \
-            -e PLUGIN_SCRIPT="gunzip -c ~/image.tar.gz | docker load && docker stop app || true && docker rm app || true && docker run -d --name app -p 80:80 kanzapi:latest" \
-            appleboy/drone-ssh
+          sshpass -p "${VM_PASSWORD}" ssh -o StrictHostKeyChecking=no -p 22 ${VM_USERNAME}@${VM_HOST} << 'EOF'
+          gunzip -c ~/image.tar.gz | docker load
+          docker stop app || true
+          docker rm app || true
+          docker run -d --name app -p 80:80 kanzapi:latest
+          EOF
