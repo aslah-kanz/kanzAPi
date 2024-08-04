@@ -3,9 +3,6 @@ WORKDIR /kanzapi
 EXPOSE 80
 EXPOSE 443
 
-# Copy the certificates
-COPY --from=source /certs /app/certs
-
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 COPY ["KanzApi.csproj", "./"]
