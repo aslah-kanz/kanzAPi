@@ -65,5 +65,5 @@ jobs:
           gunzip -c ~/kanzapi/image/kanzapi.tar.gz | docker load
           docker stop kanzapi || true
           docker rm kanzapi || true
-          docker run -d --name kanzapi -p 80:80 -v ~/kanzapi/secret/secrets.json:/kanzapi/secrets.json -e ASPNETCORE_ENVIRONMENT=Development kanzapi:latest
+          docker run -d --name kanzapi -p 8080:80 -p 8443:443 -v ~/kanzapi/certs:/app/certs -v ~/kanzapi/secret/secrets.json:/kanzapi/secrets.json -e ASPNETCORE_ENVIRONMENT=Development kanzapi:latest
           EOF
